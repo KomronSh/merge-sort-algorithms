@@ -1,0 +1,63 @@
+# Visual Studio cache/options directory
+.vs/
+
+# Build results
+Debug/
+Release/
+x64/
+x86/
+[Dd]ebug/
+[Rr]elease/
+[Xx]64/
+[Xx]86/
+[Oo]bj/
+[Bb]in/
+
+# Visual Studio project files
+*.vcxproj.user
+*.ncb
+*.suo
+*.sln.docstates
+
+# Build folders
+*.obj
+*.exe
+*.lib
+*.dll
+*.pdb
+*.ilk
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# IDE files
+.vs/
+.vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Project-specific temporary files
+temp1.txt
+temp2.txt
+f1.txt
+f2.txt
+f3.txt
+f4.txt
+output.txt
+console_log.txt
+backup.txt
+data.txt
+
+# Input/Output data files (optional, comment if you want to track these)
+input.txt
+
+# CMake
+CMakeFiles/
+CMakeCache.txt

@@ -1,0 +1,10 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Элементы решения/">
+    <File Path="TextFile1.txt" />
+  </Folder>
+  <Project Path="l5/l5.vcxproj" Id="b194ce15-90e5-407a-890c-0d58300d9381" />
+</Solution>
