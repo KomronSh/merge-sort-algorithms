@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FileGenerator.h" />
+    <ClInclude Include="MultipathMerger.h" />
     <ClInclude Include="OnePhaseSimpleMergeSort.h" />
     <ClInclude Include="OnePhaseNaturalMergeSort.h" />
     <ClInclude Include="SortStats.h" />

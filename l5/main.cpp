@@ -14,22 +14,22 @@
 #include "TwoPhaseNaturalMergeSort.h"
 #include "OnePhaseSimpleMergeSort.h"
 #include "OnePhaseNaturalMergeSort.h"
+#include "MultipathMerger.h"
 using namespace std;
 
 void print_menu() {
-    cout << "==============================\n";
-    cout << "           МЕНЮ\n";
-    cout << "==============================\n";
+
+    cout << "МЕНЮ\n";
     cout << "1. Создать новый входной файл\n";
     cout << "2. Выполнить двухфазную сортировку\n";
     cout << "3. Выполнить однофазную сортировку\n";
-    cout << "4. Выход\n";
-    cout << "==============================\n";
+    cout << "4. Выполнить многопутевое слияние\n";
+    cout << "5. Выход\n";
     cout << "Выберите действие: ";
 }
 
 void print_two_phase_menu() {
-    cout << "\n---- Двухфазная сортировка ----\n";
+    cout << "\n Двухфазная сортировка \n";
     cout << "1. Простое слияние\n";
     cout << "2. Естественное слияние\n";
     cout << "3. Вернуться в главное меню\n";
@@ -37,11 +37,18 @@ void print_two_phase_menu() {
 }
 
 void print_one_phase_menu() {
-    cout << "\n---- Однофазная сортировка ----\n";
+    cout << "\n Однофазная сортировка \n";
     cout << "1. Простое слияние\n";
     cout << "2. Естественное слияние\n";
     cout << "3. Вернуться в главное меню\n";
     cout << "Выберите метод: ";
+}
+
+void print_multipath_menu() {
+    cout << "\n Многопутевое слияние \n";
+    cout << "1. Выполнить многопутевое слияние\n";
+    cout << "2. Вернуться в главное меню\n";
+    cout << "Выберите действие: ";
 }
 
 void print_result(const string& sort_name, const SortStats& stats) {
@@ -80,7 +87,7 @@ int main() {
     
     while (true) {
         print_menu();
-        choice = get_valid_choice(1, 4);
+        choice = get_valid_choice(1, 5);
         
         if (choice == 1) {
             try {
@@ -144,10 +151,29 @@ int main() {
             }
         } 
         else if (choice == 4) {
+            if (!file_exists(filename)) {
+                cout << "Файл не найден! Сначала создайте входной файл!\n";
+                continue;
+            }
+            print_multipath_menu();
+            int method = get_valid_choice(1, 2);
+            if (method == 1) {
+                try {
+                    int T;
+                    cout << "Введите количество путей (T): ";
+                    cin >> T;
+                    SortStats stats;
+                    MultipathMerger<int> merger(filename, T, &stats);
+                    print_result("Многопутевое слияние", stats);
+                } catch (const exception& e) {
+                    cerr << "Ошибка при выполнении многопутевого слияния: " << e.what() << "\n";
+                }
+            }
+        }
+        else if (choice == 5) {
             cout << "Выход из программы.\n";
             break;
         }
     }
-    
     return 0;
 }
