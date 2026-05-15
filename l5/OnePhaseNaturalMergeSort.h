@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <chrono>
+#include <iostream>
 #include "SortStats.h"
 using namespace std;
 
@@ -14,154 +15,164 @@ public:
     }
 
 private:
-    void phase_sort(const string& fin1_name, const string& fin2_name,
-                    const string& fout1_name, const string& fout2_name, int p,
-                    int& cmp_cnt, int& move_cnt) {
-        ifstream fin1(fin1_name);
-        ifstream fin2(fin2_name);
-        ofstream fout1(fout1_name);
-        ofstream fout2(fout2_name);
-        if (!fin1.is_open() || !fin2.is_open() || !fout1.is_open() || !fout2.is_open()) {
-            cerr << "Error opening file in phase_sort" << "\n";
-            return;
+    struct RunInput {
+        ifstream file;
+        bool has_value = false;
+        T value{};
+
+        explicit RunInput(const string& filename) : file(filename) {}
+
+        bool read_next() {
+            has_value = static_cast<bool>(file >> value);
+            return has_value;
         }
-        int m1 = 0, m2 = 0;
-        T z1, z2;
-        bool h1 = static_cast<bool>(fin1 >> z1);
-        bool h2 = static_cast<bool>(fin2 >> z2);
-        while (h1 || h2) {
-            int i = 0, j = 0;
-            while (i < p && h1 && j < p && h2) {
-                cmp_cnt++;
-                if (z1 <= z2) {
-                    fout1 << z1 << " ";
+    };
+
+    int distribute_initial_runs(const string& filename, const string& fout1_name,
+                                const string& fout2_name, long long& cmp_cnt,
+                                long long& move_cnt) {
+        ifstream fin(filename);
+        ofstream fout1(fout1_name, ios::trunc);
+        ofstream fout2(fout2_name, ios::trunc);
+
+        if (!fin.is_open() || !fout1.is_open() || !fout2.is_open()) {
+            cerr << "Error opening file in distribute_initial_runs" << "\n";
+            return 0;
+        }
+
+        T prev{}, current{};
+        if (!(fin >> current)) {
+            return 0;
+        }
+
+        int runs_count = 1;
+        bool to_first = true;
+        fout1 << current << " ";
+        move_cnt++;
+        prev = current;
+
+        while (fin >> current) {
+            cmp_cnt++;
+            if (current < prev) {
+                runs_count++;
+                to_first = !to_first;
+            }
+
+            (to_first ? fout1 : fout2) << current << " ";
+            move_cnt++;
+            prev = current;
+        }
+
+        return runs_count;
+    }
+
+    int merge_natural_runs(const string& fin1_name, const string& fin2_name,
+                           const string& fout1_name, const string& fout2_name,
+                           long long& cmp_cnt, long long& move_cnt) {
+        RunInput fin1(fin1_name);
+        RunInput fin2(fin2_name);
+        ofstream fout1(fout1_name, ios::trunc);
+        ofstream fout2(fout2_name, ios::trunc);
+
+        if (!fin1.file.is_open() || !fin2.file.is_open() || !fout1.is_open() || !fout2.is_open()) {
+            cerr << "Error opening file in merge_natural_runs" << "\n";
+            return 0;
+        }
+
+        fin1.read_next();
+        fin2.read_next();
+
+        int runs_count = 0;
+        bool to_first = true;
+
+        while (fin1.has_value || fin2.has_value) {
+            ofstream& fout = to_first ? fout1 : fout2;
+            bool run1_active = fin1.has_value;
+            bool run2_active = fin2.has_value;
+            runs_count++;
+
+            while (run1_active || run2_active) {
+                bool take_first;
+
+                if (run1_active && run2_active) {
+                    cmp_cnt++;
+                    take_first = fin1.value <= fin2.value;
+                }
+                else {
+                    take_first = run1_active;
+                }
+
+                if (take_first) {
+                    T old_value = fin1.value;
+                    fout << fin1.value << " ";
                     move_cnt++;
-                    h1 = static_cast<bool>(fin1 >> z1);
-                    i++;
-                } else {
-                    fout1 << z2 << " ";
+                    if (!fin1.read_next()) {
+                        run1_active = false;
+                    }
+                    else {
+                        cmp_cnt++;
+                        if (fin1.value < old_value) {
+                            run1_active = false;
+                        }
+                    }
+                }
+                else {
+                    T old_value = fin2.value;
+                    fout << fin2.value << " ";
                     move_cnt++;
-                    h2 = static_cast<bool>(fin2 >> z2);
-                    j++;
+                    if (!fin2.read_next()) {
+                        run2_active = false;
+                    }
+                    else {
+                        cmp_cnt++;
+                        if (fin2.value < old_value) {
+                            run2_active = false;
+                        }
+                    }
                 }
             }
-            while (i < p && h1) {
-                fout1 << z1 << " ";
-                move_cnt++;
-                h1 = static_cast<bool>(fin1 >> z1);
-                i++;
-            }
-            while (j < p && h2) {
-                fout1 << z2 << " ";
-                move_cnt++;
-                h2 = static_cast<bool>(fin2 >> z2);
-                j++;
-            }
+
+            to_first = !to_first;
         }
-        fin1.close();
-        fin2.close();
-        fout1.close();
-        fout2.close();
+
+        return runs_count;
+    }
+
+    void copy_file(const string& src_name, const string& dest_name) {
+        ifstream src(src_name);
+        ofstream dest(dest_name, ios::trunc);
+        if (!src.is_open() || !dest.is_open()) {
+            cerr << "Error opening file in copy_file" << "\n";
+            return;
+        }
+
+        T value;
+        while (src >> value) {
+            dest << value << " ";
+        }
     }
 
     void one_phase_sort(const string& filename, SortStats* stats) {
-        int cmp_cnt = 0;
-        int move_cnt = 0;
+        long long cmp_cnt = 0;
+        long long move_cnt = 0;
         auto start = chrono::steady_clock::now();
 
-        ifstream f(filename);
-        ofstream f1("f1.txt");
-        ofstream f2("f2.txt");
-        ofstream cl("console_log.txt");
+        int runs_count = distribute_initial_runs(filename, "f1.txt", "f2.txt", cmp_cnt, move_cnt);
+        bool from_first_pair = true;
 
-        if (!f.is_open() || !f1.is_open() || !f2.is_open() || !cl.is_open()) {
-            cerr << "Error opening file" << "\n";
-            return;
-        }
-
-        T z;
-        bool to_f1 = true;
-        int N = 0;
-
-        while (f >> z) {
-            if (to_f1) {
-                f1 << z << " ";
+        while (runs_count > 1) {
+            if (from_first_pair) {
+                runs_count = merge_natural_runs("f1.txt", "f2.txt", "f3.txt", "f4.txt", cmp_cnt, move_cnt);
             }
             else {
-                f2 << z << " ";
+                runs_count = merge_natural_runs("f3.txt", "f4.txt", "f1.txt", "f2.txt", cmp_cnt, move_cnt);
             }
-            move_cnt++;
-            to_f1 = !to_f1;
-            N++;
+            from_first_pair = !from_first_pair;
         }
 
-        f1.close();
-        f2.close();
-        f.close();
-
-        int p = 1;
-        bool up = true;
-
-        while (p < N) {
-            if (up) {
-                phase_sort("f1.txt", "f2.txt", "f3.txt", "f4.txt", p, cmp_cnt, move_cnt);
-            }
-            else {
-                phase_sort("f3.txt", "f4.txt", "f1.txt", "f2.txt", p, cmp_cnt, move_cnt);
-            }
-            p *= 2;
-            up = !up;
+        if (runs_count == 1) {
+            copy_file(from_first_pair ? "f1.txt" : "f3.txt", filename);
         }
-
-        string fin1_name, fin2_name;
-        if (!up) {
-            fin1_name = "f3.txt";
-            fin2_name = "f4.txt";
-        }
-        else {
-            fin1_name = "f1.txt";
-            fin2_name = "f2.txt";
-        }
-
-        ifstream fin1(fin1_name);
-        ifstream fin2(fin2_name);
-        ofstream fout(filename);
-
-        if (!fin1.is_open() || !fin2.is_open() || !fout.is_open()) {
-            cerr << "Error opening files for merge" << "\n";
-            return;
-        }
-
-        T z1, z2;
-        bool has_z1 = static_cast<bool>(fin1 >> z1);
-        bool has_z2 = static_cast<bool>(fin2 >> z2);
-        while (has_z1 && has_z2) {
-            cmp_cnt++;
-            if (z1 <= z2) {
-                fout << z1 << " ";
-                move_cnt++;
-                has_z1 = static_cast<bool>(fin1 >> z1);
-            } else {
-                fout << z2 << " ";
-                move_cnt++;
-                has_z2 = static_cast<bool>(fin2 >> z2);
-            }
-        }
-        while (has_z1) {
-            fout << z1 << " ";
-            move_cnt++;
-            has_z1 = static_cast<bool>(fin1 >> z1);
-        }
-        while (has_z2) {
-            fout << z2 << " ";
-            move_cnt++;
-            has_z2 = static_cast<bool>(fin2 >> z2);
-        }
-
-        fin1.close();
-        fin2.close();
-        fout.close();
-        cl.close();
 
         auto end = chrono::steady_clock::now();
         if (stats) {
