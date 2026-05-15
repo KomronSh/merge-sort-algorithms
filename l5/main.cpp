@@ -7,6 +7,10 @@
 #include <limits>
 #include <filesystem>
 #include <iomanip>
+#include <vector>
+#include <random>
+#include <sstream>
+#include <stdexcept>
 
 #include "SortStats.h"
 #include "FileGenerator.h"
@@ -15,6 +19,7 @@
 #include "OnePhaseSimpleMergeSort.h"
 #include "OnePhaseNaturalMergeSort.h"
 #include "MultipathMerger.h"
+#include "Test.h"
 using namespace std;
 
 void print_menu() {
@@ -24,7 +29,8 @@ void print_menu() {
     cout << "2. Выполнить двухфазную сортировку\n";
     cout << "3. Выполнить однофазную сортировку\n";
     cout << "4. Выполнить многопутевое слияние\n";
-    cout << "5. Выход\n";
+    cout << "5. Выполнить тестирование алгоритмов\n";
+    cout << "6. Выход\n";
     cout << "Выберите действие: ";
 }
 
@@ -52,33 +58,11 @@ void print_multipath_menu() {
 }
 
 void print_result(const string& sort_name, const SortStats& stats) {
-    cout << "\n=== " << sort_name << " ===\n";
+    cout << "\n " << sort_name << " \n";
     cout << "Сравнений: " << stats.cmp_cnt << "\n";
     cout << "Перемещений: " << stats.move_cnt << "\n";
     cout << "Время: " << fixed << setprecision(2) << (stats.duration_ns / 1000000.0) << " мс"
          << " (" << static_cast<long long>(stats.duration_ns) << " нс)\n";
-}
-
-bool file_exists(const string& filename) {
-    try {
-        return filesystem::exists(filename);
-    } catch (const exception&) {
-        return false;
-    }
-}
-
-int get_valid_choice(int min_choice, int max_choice) {
-    int choice;
-    while (!(cin >> choice) || choice < min_choice || choice > max_choice) {
-        if (cin.eof()) {
-            cout << "\nВвод закончился. Выход из программы.\n";
-            exit(0);
-        }
-        cout << "Ошибка ввода! Введите число от " << min_choice << " до " << max_choice << ": ";
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    }
-    return choice;
 }
 
 int main() {
@@ -87,7 +71,7 @@ int main() {
     
     while (true) {
         print_menu();
-        choice = get_valid_choice(1, 5);
+        choice = get_valid_choice(1, 6);
         
         if (choice == 1) {
             try {
@@ -171,6 +155,9 @@ int main() {
             }
         }
         else if (choice == 5) {
+            run_benchmark_tests();
+        }
+        else if (choice == 6) {
             cout << "Выход из программы.\n";
             break;
         }

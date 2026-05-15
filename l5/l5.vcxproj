@@ -136,6 +136,7 @@
     <ClInclude Include="OnePhaseSimpleMergeSort.h" />
     <ClInclude Include="OnePhaseNaturalMergeSort.h" />
     <ClInclude Include="SortStats.h" />
+    <ClInclude Include="Test.h" />
     <ClInclude Include="TwoPhaseSimpleMergeSort.h" />
     <ClInclude Include="TwoPhaseNaturalMergeSort.h" />
   </ItemGroup>
